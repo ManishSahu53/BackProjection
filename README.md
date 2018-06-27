@@ -3,7 +3,7 @@ This python 2.7 script will convert 3D point to 2D image plane.
 Project consist of Lambda function which is executed with aws Lambda call.
 
 Inputs will be
-1. X,y - coordinate of 3D point in world coordinate system. This might be in 
+1. X,Y - coordinate of 3D point in world coordinate system. This might be in 
 projected or in Geographic coordiante sytem.
 
 2. Camera file - This file contains information about camera location, 
