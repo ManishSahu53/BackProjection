@@ -5,6 +5,37 @@ def lambda_handler(event,context):
     z = event.get('z')
     camera_file_location = event.get('camera_file_location')
 
+    
+    # For converting projected to geographic coordinate system
+    def xy2latlong(easting,northing,zone,hemi):
+        lat,long = utm.to_latlon( easting,northing,zone,hemi);
+        return lat,long
+    
+    # For converting geographic to projected coordinate system
+    def latlong2utm(lat,long):
+        coord = utm.from_latlon(lat, long);
+        easting =  coord[0];
+        northing = coord[1];
+        zone = coord[2];
+        hemi = coord[3];
+        return easting,northing,zone,hemi
+    
+    # For converting latitude Longitude to ECEF/ geocentric coordinate system
+    def gps_to_ecef_custom(lat, lon, alt):
+        rad_lat = lat * (math.pi / 180.0)
+        rad_lon = lon * (math.pi / 180.0)
+    
+        radius = 6378137.0              # Radius of the Earth (in meters)
+        flatten_surface = 298.257223563 # flatten factor of earth according to wgs84
+        f = 1 / flatten_surface
+        e2 = 1 - (1 - f) * (1 - f)
+        v = radius / math.sqrt(1 - e2 * math.sin(rad_lat) * math.sin(rad_lat))
+    
+        x = (v + alt) * math.cos(rad_lat) * math.cos(rad_lon)
+        y = (v + alt) * math.cos(rad_lat) * math.sin(rad_lon)
+        z = (v * (1 - e2) + alt) * math.sin(rad_lat)
+        return x, y, z
+    
     def power(x,p):
         return math.pow(x, p)
     
@@ -25,11 +56,15 @@ def lambda_handler(event,context):
     def create_calibration_matrix(f,cx,cy):
         calibration_matrix = np.zeros((3,3));
         calibration_matrix[0,0] = f;
-        calibration_matrix[1,1] = f;
         calibration_matrix[0,2] = cx;
+        calibration_matrix[1,1] = f;
         calibration_matrix[1,2] = cy;
         calibration_matrix[2,2] = 1;
         return calibration_matrix
+
+    def translationVector(rot,C):
+        t = -np.dot(rot,C);
+        return t
     
     def eulerAnglesToRotationMatrix_wiki(theta):
         R_x = np.array([[1, 0                 ,                   0], 
@@ -62,6 +97,9 @@ def lambda_handler(event,context):
     import utm
     import math 
     
+    if lat< 1000:
+        x,y,zone,hemi = latlong2utm(lat,long);
+        
     camera_type = "sonya6000"
     #data_loc = "/home/indshine-2/Downloads/Link to SfM/BackTracing/"; 
     camera_file = camera_file_location; #camera Location File
@@ -70,8 +108,8 @@ def lambda_handler(event,context):
     X = np.ones(3);
     C = np.ones(3);
     
-    rot_mat = np.zeros((4,4));
-    rot_mat[3,3] = 1;
+    #rot_mat = np.zeros((4,4));
+    #rot_mat[3,3] = 1;
     
     if camera_type == "sonya6000":
         # All units in pixels
@@ -102,19 +140,18 @@ def lambda_handler(event,context):
     image_name=[];
     x_coord = [];
     y_coord = [];
-
-    calibration_matrix = create_calibration_matrix(focal,cx,cy);
-    no_of_cameras = len(camera_data) -2;
-    
     for cams in range(no_of_cameras):
         for i in range(1):
            
             rot_ag = np.array(camera_data[cams+2][7:16]); # For agisoft 7:16
             rot_ag = np.resize(rot_ag,(3,3));
             rot_ag = rot_ag.astype(np.double);
-            rot_ag = np.transpose(rot_ag); # relative to camera
-            
-
+            #rot_ag = np.transpose(rot_ag); # relative to camera
+            # This changing negative sign is due to fact that
+            # Agisoft's omega, Phi, Kappa reference is different
+            # than standard angles
+            rot_ag[1] = -rot_ag[1];
+            rot_ag[2] = -rot_ag[2];
             
             theta =  np.array(camera_data[cams+2][4:7]); 
             theta = theta.astype(np.double);
@@ -123,21 +160,19 @@ def lambda_handler(event,context):
             
             C[0:3] = np.array(camera_data[cams+2][1:4]);
             C = C.astype(np.double);
-            C_utm= utm.from_latlon(C[1], C[0]);
             
-            C[0] = C_utm[0];
-            C[1] = C_utm[1];
-            
+            C_ecef= latlong2utm(C[1], C[0]); # Lat,Long,Ele
+            C[0] = C_ecef[0];
+            C[1] = C_ecef[1];
+#            C_ecef = np.asarray(C_ecef);
             X[0] = x;
             X[1] = y;
-            X[2] = z;
+            X[2] = elevation;
             
             rel_loc = X-C; # Relative location wrt to camera
             
             projection_matrix_ag = np.dot(rot_ag, rel_loc); # Projection Matrix
-            
-            pixel_coord_ag = np.dot(calibration_matrix,projection_matrix_ag); # Distorted Pixel Location 
-            
+            pixel_coord_ag = np.dot(calibration_matrix,projection_matrix_ag); # Distorted Pixel Location             
             pixel_coord_ag = pixel_coord_ag/pixel_coord_ag[2]; # Back to Homogenous Coordinate system
             
             # Undistorted Pixel Location
