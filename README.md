@@ -25,12 +25,13 @@ noted that Rotational Matrix will be
 
 [ r11 ,  r12 ,  r13]
 
-
 [-r21 , -r22 , -r23]
-
 
 [-r31 , -r32 , -r33]
 
+
+
+See this sheet for reference - https://docs.google.com/spreadsheets/d/12dXUMDaMuzXPH__3mwHE2zCIMFH0Rdx3lNIwuJUOeww/edit?ouid=111414247711934633785&usp=sheets_home&ths=true
 
 
 Dependencies 
