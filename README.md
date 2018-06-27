@@ -15,16 +15,12 @@ projected or in Geographic coordiante sytem.
     Format of the file is as follows 
 PhotoID, X, Y, Z, Omega, Phi, Kappa, r11, r12, r13, r21, r22, r23, r31, r32, r33
 
-Where photo Id will contain name of camera/photo, 
-
-X,Y,Z are coordinate of camera centre. 
-
-Omega, Phi, Kappa is orientation of that camera
-
-
-r11,r12.. r33 are elements of 3x3 rotational matrix. Here one point is to be 
+Where 
+1. Photo Id contains name of camera/photo, 
+2. X,Y,Z are coordinate of camera centre. 
+3. Omega, Phi, Kappa is orientation of that camera
+4. r11,r12.. r33 are elements of 3x3 rotational matrix. Here one point is to be 
 noted that Rotational Matrix will be 
-
 
 [ r11 ,  r12 ,  r13]
 
