@@ -1,12 +1,6 @@
-
-def lambda_handler(event,context):
-    x = event.get('x')
-    y = event.get('y')
-    z = event.get('z')
-    camera_file_location = event.get('camera_file_location')
-
-    
-     # For converting projected to geographic coordinate system
+def BackProject(lat,long,elevation,camera_file_location):
+   
+    # For converting projected to geographic coordinate system
     def xy2latlong(easting,northing,zone,hemi):
         lat,long = utm.to_latlon( easting,northing,zone,hemi);
         return lat,long
@@ -97,8 +91,8 @@ def lambda_handler(event,context):
     import utm
     import math 
     
-    if x< 1000:
-        x,y,zone,hemi = latlong2utm(x,y);
+    if lat< 1000:
+        x,y,zone,hemi = latlong2utm(lat,long);
         
     camera_type = "sonya6000"
     #data_loc = "/home/indshine-2/Downloads/Link to SfM/BackTracing/"; 
@@ -168,7 +162,7 @@ def lambda_handler(event,context):
 #            C_ecef = np.asarray(C_ecef);
             X[0] = x;
             X[1] = y;
-            X[2] = z;
+            X[2] = elevation;
             
             rel_loc = X-C; # Relative location wrt to camera
             

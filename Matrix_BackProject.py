@@ -102,7 +102,10 @@ def BackProject(lat,long,elevation,camera_file,camera_name):
         # That Means lat is in geographic coordinate system
         # dimension(x) = 1xN
         x,y,zone,hemi = latlong2utm(lat,long); 
-
+    else:
+        x = lat;
+        y = long;
+        
         
     camera_type = "sonya6000"
     camera_data = get_txt_file(camera_file);
